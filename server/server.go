@@ -29,6 +29,7 @@ import (
 	"github.com/dexidp/dex/connector/atlassiancrowd"
 	"github.com/dexidp/dex/connector/authproxy"
 	"github.com/dexidp/dex/connector/bitbucketcloud"
+	"github.com/dexidp/dex/connector/discord"
 	"github.com/dexidp/dex/connector/gitea"
 	"github.com/dexidp/dex/connector/github"
 	"github.com/dexidp/dex/connector/gitlab"
@@ -591,6 +592,7 @@ var ConnectorsConfig = map[string]func() ConnectorConfig{
 	"bitbucket-cloud": func() ConnectorConfig { return new(bitbucketcloud.Config) },
 	"openshift":       func() ConnectorConfig { return new(openshift.Config) },
 	"atlassian-crowd": func() ConnectorConfig { return new(atlassiancrowd.Config) },
+	"discord":         func() ConnectorConfig { return new(discord.Config) },
 	// Keep around for backwards compatibility.
 	"samlExperimental": func() ConnectorConfig { return new(saml.Config) },
 }
