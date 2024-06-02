@@ -2,7 +2,7 @@ ARG BASE_IMAGE=alpine
 
 FROM --platform=$BUILDPLATFORM tonistiigi/xx:1.4.0@sha256:0cd3f05c72d6c9b038eb135f91376ee1169ef3a330d34e418e65e2a5c2e9c0d4 AS xx
 
-FROM --platform=$BUILDPLATFORM golang:1.22.3-alpine3.18@sha256:45319271acc6318e717a16a8f79539cffbee77cebd0602b32f4e55c26db9f78e AS builder
+FROM --platform=$BUILDPLATFORM golang:1.22.3-alpine3.18@sha256:d1a601b64de09e2fa38c95e55838961811d5ca11062a8f4230a5c434b3ae2a34 AS builder
 
 COPY --from=xx / /
 
@@ -35,13 +35,13 @@ RUN make release-binary
 
 RUN xx-verify /go/bin/dex && xx-verify /go/bin/docker-entrypoint
 
-FROM alpine:3.19.1@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b AS stager
+FROM alpine:3.20.0@sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd AS stager
 
 RUN mkdir -p /var/dex
 RUN mkdir -p /etc/dex
 COPY config.docker.yaml /etc/dex/
 
-FROM alpine:3.19.1@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b AS gomplate
+FROM alpine:3.20.0@sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd AS gomplate
 
 ARG TARGETOS
 ARG TARGETARCH
@@ -54,7 +54,7 @@ RUN wget -O /usr/local/bin/gomplate \
   && chmod +x /usr/local/bin/gomplate
 
 # For Dependabot to detect base image versions
-FROM alpine:3.19.1@sha256:c5b1261d6d3e43071626931fc004f70149baeba2c8ec672bd4f27761f8e1ad6b AS alpine
+FROM alpine:3.20.0@sha256:77726ef6b57ddf65bb551896826ec38bc3e53f75cdde31354fbffb4f25238ebd AS alpine
 FROM gcr.io/distroless/static-debian12:nonroot@sha256:e9ac71e2b8e279a8372741b7a0293afda17650d926900233ec3a7b2b7c22a246 AS distroless
 
 FROM $BASE_IMAGE
