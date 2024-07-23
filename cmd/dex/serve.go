@@ -50,6 +50,15 @@ type serveOptions struct {
 	grpcAddr      string
 }
 
+var buildInfo = prometheus.NewGaugeVec(
+	prometheus.GaugeOpts{
+		Name:      "build_info",
+		Namespace: "dex",
+		Help:      "A metric with a constant '1' value labeled by version from which Dex was built.",
+	},
+	[]string{"version", "go_version", "platform"},
+)
+
 func commandServe() *cobra.Command {
 	options := serveOptions{}
 
@@ -90,6 +99,7 @@ func runServe(options serveOptions) error {
 		return fmt.Errorf("error parse config file %s: %v", configFile, err)
 	}
 
+	c.Parse()
 	applyConfigOverrides(options, &c)
 
 	logger, err := newLogger(c.Logger.Level, c.Logger.Format)
@@ -117,6 +127,10 @@ func runServe(options serveOptions) error {
 	logger.Info("config issuer", "issuer", c.Issuer)
 
 	prometheusRegistry := prometheus.NewRegistry()
+
+	prometheusRegistry.MustRegister(buildInfo)
+	recordBuildInfo()
+
 	err = prometheusRegistry.Register(collectors.NewGoCollector())
 	if err != nil {
 		return fmt.Errorf("failed to register Go runtime metrics: %v", err)
@@ -488,7 +502,7 @@ func runServe(options serveOptions) error {
 		}
 
 		grpcSrv := grpc.NewServer(grpcOptions...)
-		api.RegisterDexServer(grpcSrv, server.NewAPI(serverConfig.Storage, logger, version))
+		api.RegisterDexServer(grpcSrv, server.NewAPI(serverConfig.Storage, logger, version, c.AdditionalFeatures))
 
 		grpcMetrics.InitializeMetrics(grpcSrv)
 		if c.GRPC.Reflection {
@@ -520,11 +534,11 @@ func newLogger(level slog.Level, format string) (*slog.Logger, error) {
 	var handler slog.Handler
 	switch strings.ToLower(format) {
 	case "", "text":
-		slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+		handler = slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
 			Level: level,
 		})
 	case "json":
-		slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
+		handler = slog.NewJSONHandler(os.Stderr, &slog.HandlerOptions{
 			Level: level,
 		})
 	default:
@@ -683,4 +697,9 @@ func loadTLSConfig(certFile, keyFile, caFile string, baseConfig *tls.Config) (*t
 		loadedConfig.ClientCAs = cPool
 	}
 	return loadedConfig, nil
+}
+
+// recordBuildInfo publishes information about Dex version and runtime info through an info metric (gauge).
+func recordBuildInfo() {
+	buildInfo.WithLabelValues(version, runtime.Version(), fmt.Sprintf("%s/%s", runtime.GOOS, runtime.GOARCH)).Set(1)
 }
